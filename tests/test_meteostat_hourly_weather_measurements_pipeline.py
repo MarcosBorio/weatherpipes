@@ -1,0 +1,3 @@
+from pipelines.meteostat_hourly_weather_measurements_pipeline import meteostat_hourly_weather_measurements_pipeline
+
+meteostat_hourly_weather_measurements_pipeline()
