@@ -1,28 +1,33 @@
-def insert_dataframe(dataframe, target_schema='raw_meteostat', target_table='hourly_weather_measurements', engine=None, chunk_size=None):
+def insert_dataframe(dataframe, target_schema, target_table, engine=None, chunk_size=None, if_exists='append'):
     """
-    Inserta un DataFrame en la tabla objetivo. Si se especifica chunk_size, inserta los datos por bloques de tamaño chunk_size.
+    Inserts a pandas DataFrame into a specified database table. The data can be inserted in chunks if chunk_size is specified.
+
+    :param dataframe: pandas DataFrame containing the data to be inserted.
+    :param target_schema: Database schema where the table resides.
+    :param target_table: Target database table for data insertion.
+    :param engine: SQLAlchemy engine object for database connection.
+    :param chunk_size: If specified, the data will be inserted in chunks of this size. 
+                       If None, the entire DataFrame will be inserted at once.
+    :param if_exists: Specifies how to behave if the table already exists ('append', 'replace', etc.).
     
-    :param dataframe: DataFrame con los datos a insertar.
-    :param target_schema: Esquema de la base de datos donde insertar los datos.
-    :param target_table: Tabla de la base de datos donde insertar los datos.
-    :param engine: Conexión activa a la base de datos.
-    :param chunk_size: Tamaño del bloque de datos a insertar. Si es None, inserta todo el DataFrame de una vez.
+    :raises RuntimeError: If there is an error during the data insertion process.
     """
     try:
         if chunk_size is None:
-            # Inserta todo el DataFrame de una vez
-            rows = dataframe.to_sql(target_table, con=engine, schema=target_schema, if_exists='append', index=False) 
-            print(f"Data inserted into table {target_schema}.{target_table} (rows = {rows})")
+            # Insert the entire DataFrame at once
+            rows = dataframe.to_sql(target_table, con=engine, schema=target_schema, if_exists=if_exists, index=False)
+            print(f"Data inserted into {target_schema}.{target_table} (rows inserted: {rows})")
         else:
-            # Inserta el DataFrame en bloques de tamaño chunk_size
+            # Insert the DataFrame in chunks of the specified size
             total_rows = len(dataframe)
-            print(f"Total de registros a insertar: {total_rows}")
+            print(f"Total rows to insert: {total_rows}")
 
             for i in range(0, total_rows, chunk_size):
                 chunk = dataframe.iloc[i:i + chunk_size]
-                print(f"Insertando registros {i} a {i + len(chunk) - 1} en la tabla {target_schema}.{target_table}")
-                chunk.to_sql(target_table, con=engine, schema=target_schema, if_exists='append', index=False)
+                print(f"Inserting rows {i} to {i + len(chunk) - 1} into {target_schema}.{target_table}")
+                chunk.to_sql(target_table, con=engine, schema=target_schema, if_exists=if_exists, index=False)
 
     except Exception as e:
-        print(f"Error al insertar datos en la tabla {target_schema}.{target_table}: {e}")
+        # Log the error and raise a RuntimeError for higher-level handling
+        print(f"Error inserting data into {target_schema}.{target_table}: {e}")
         raise RuntimeError(f"Error in function insert_dataframe: {e}")

@@ -1,37 +1,57 @@
 import psycopg2
 import os
+import pandas as pd
 from psycopg2 import sql
 from src.database.connections import create_server_connection
 from dotenv import load_dotenv
 
 def create_database(conn, new_db_name):
-    """Crea una nueva base de datos"""
+    """
+    Creates a new PostgreSQL database.
+
+    :param conn: psycopg2 connection object to the PostgreSQL server.
+    :param new_db_name: Name of the new database to be created.
+    :raises: psycopg2.Error if there is an issue executing the SQL command.
+    """
     try:
-        conn.autocommit = True  #Necesario para poder ejecutar CREATE DATABASE
+        conn.autocommit = True  # Required to execute CREATE DATABASE outside a transaction
         cursor = conn.cursor()
-        cursor.execute(sql.SQL("CREATE DATABASE {}").format(
-            sql.Identifier(new_db_name))
-        )
-        print(f"Base de datos {new_db_name} creada exitosamente.")
+        cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(new_db_name)))
+        print(f"Database {new_db_name} created successfully.")
     except psycopg2.Error as e:
-        print(f"Error al crear la base de datos: {e}")
+        print(f"Error creating the database: {e}")
 
 def create_schema(conn, new_db_schema):
-    """Crea un nuevo schema"""
-    try:
-        conn.autocommit = True  # Necesario para poder ejecutar CREATE DATABASE
-        cursor = conn.cursor()
-        cursor.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(
-            sql.Identifier(new_db_schema))
-        )
-        print(f"Schema {new_db_schema} creado exitosamente")
-    except psycopg2.Error as e:
-        print(f"Error al crear el esquema: {e}")        
+    """
+    Creates a new schema in the PostgreSQL database.
 
-def create_meteostat_raw_tables(conn):
-    """Crea las tablas raw en la base de datos"""
+    :param conn: psycopg2 connection object to the database.
+    :param new_db_schema: Name of the schema to create.
+    :raises: psycopg2.Error if there is an issue executing the SQL command.
+    """
     try:
-        sql_create_stations_table = """
+        conn.autocommit = True  # Required for schema creation
+        cursor = conn.cursor()
+        cursor.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(sql.Identifier(new_db_schema)))
+        print(f"Schema {new_db_schema} created successfully.")
+    except psycopg2.Error as e:
+        print(f"Error creating schema: {e}")
+
+def create_meteostat_tables(conn):
+    """
+    Creates the required raw tables in the PostgreSQL database for Meteostat data ingestion.
+
+    Tables created:
+    - raw_meteostat.stations: Stores station information.
+    - raw_meteostat.hourly_weather_measurements: Stores hourly weather data for each station.
+    - raw_meteostat.stations_ingestion_control: Tracks the last ingestion timestamp for each station.
+
+    :param conn: psycopg2 connection object to the database.
+    :raises: psycopg2.Error if there is an issue executing the SQL command.
+    """
+    try:
+        # SQL to create stations table
+        sql_create_meteostat_stations_table = """
         CREATE TABLE IF NOT EXISTS raw_meteostat.stations (
             stationid VARCHAR(256) PRIMARY KEY,
             stationname VARCHAR(256) NOT NULL,
@@ -41,63 +61,88 @@ def create_meteostat_raw_tables(conn):
             icao VARCHAR(100),
             latitude DECIMAL(9,6),
             longitude DECIMAL(9,6),
-            elevation float,
+            elevation FLOAT,
             timezone VARCHAR(100),
             source VARCHAR(256)
         );
         """
 
-        sql_create_hourly_weather_measurements_table = """
+        # SQL to create hourly weather measurements table
+        sql_create_meteostat_hourly_weather_measurements_table = """
         CREATE TABLE IF NOT EXISTS raw_meteostat.hourly_weather_measurements (
             hourlyweathermeasurementid BIGINT PRIMARY KEY,
             stationid VARCHAR(256) NOT NULL,
             time VARCHAR(100) NOT NULL,
-            temp float,
-            rhum float,
-            prcp float,
-            wdir float,
-            wspd float,
-            wpgt float,
-            pres float,
+            temp FLOAT,
+            rhum FLOAT,
+            prcp FLOAT,
+            wdir FLOAT,
+            wspd FLOAT,
+            wpgt FLOAT,
+            pres FLOAT,
             source VARCHAR(256)
         );
         """
+
+        # SQL to create ingestion control table
+        sql_create_stations_ingestion_control_table = """
+        CREATE TABLE IF NOT EXISTS raw_meteostat.stations_ingestion_control (
+            stationid VARCHAR(256) PRIMARY KEY,
+            hourly_max_timestamp TIMESTAMP NOT NULL DEFAULT '1900/01/01 00:00'
+        );
+        """
+
+        # Execute SQL statements to create the tables
         cursor = conn.cursor()
-        cursor.execute(sql_create_stations_table)
-        print("Tabla 'stations' creada exitosamente.")
+        cursor.execute(sql_create_meteostat_stations_table)
+        print("Table 'stations' created successfully.")
         conn.commit()
-        cursor.execute(sql_create_hourly_weather_measurements_table)
-        print("Tabla 'hourly_weather_measurements' creada exitosamente.")
+
+        cursor.execute(sql_create_meteostat_hourly_weather_measurements_table)
+        print("Table 'hourly_weather_measurements' created successfully.")
+        cursor.execute(sql_create_stations_ingestion_control_table)
+        print("Table 'stations_ingestion_control' created successfully.")
         conn.commit()
+
     except psycopg2.Error as e:
-        print(f"Error al crear la tabla: {e}")
+        print(f"Error creating tables: {e}")
 
 def init_db():
-    #Cargar las variables de entorno desde el archivo .env
+    """
+    Initializes the database by creating the necessary database, schema, and tables for Meteostat data ingestion.
+
+    Steps:
+    1. Load environment variables for database configuration.
+    2. Create the database if it doesn't exist.
+    3. Create the raw schema and tables required for Meteostat data ingestion.
+    
+    :raises: RuntimeError if there is an issue with database creation or connection.
+    """
+    # Load environment variables (e.g., DB credentials)
     load_dotenv()
 
-    # Configuración de la base de datos
+    # Database configuration
     db_user = os.getenv('DB_USER')
     db_password = os.getenv('DB_PASSWORD')
     db_host = os.getenv('DB_HOST')
     db_port = os.getenv('DB_PORT')
-    db_name = os.getenv('DB_NAME') # Nombre de la nueva base de datos a crear
-    server_db_name = os.getenv('SERVER_DB_NAME')  # Base de datos existente para conectarse al servidor
+    db_name = os.getenv('DB_NAME')  # Name of the database to be created
+    server_db_name = os.getenv('SERVER_DB_NAME')  # Existing database for server connection
 
-    # Paso 1: Conectar al servidor PostgreSQL
+    # Step 1: Connect to the PostgreSQL server
     server_conn = create_server_connection(server_db_name, db_user, db_password, db_host, db_port)
 
-    # Paso 2: Crear la base de datos si no existe
+    # Step 2: Create the database if it doesn't exist
     if server_conn is not None:
         create_database(server_conn, db_name)
-        server_conn.close()  # Cerrar la conexión al servidor
+        server_conn.close()
 
-    # Paso 3: Conectar a la nueva base de datos
+    # Step 3: Connect to the newly created database
     conn = create_server_connection(db_name, db_user, db_password, db_host, db_port)
 
-    # Paso 4:Crear esquema y tablas
+    # Step 4: Create schema and required tables
     if conn is not None:
-        create_schema(conn,'raw_meteostat')    
-        create_meteostat_raw_tables(conn)
-        server_conn.close() 
-        conn.close()  # Cerrar la conexión a la base de datos
+        create_schema(conn, 'raw_meteostat')
+        create_meteostat_tables(conn)
+        server_conn.close()
+        conn.close()  # Close the connection to the database
