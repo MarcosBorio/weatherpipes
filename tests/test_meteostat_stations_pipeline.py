@@ -1,3 +1,0 @@
-from pipelines.meteostat_stations_pipeline import meteostat_stations_pipeline
-
-meteostat_stations_pipeline()
