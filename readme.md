@@ -1,6 +1,6 @@
 # Weatherpipes
 
-WeatherPipes is a data processing module designed as part of The Weather Project to manage and automate pipelines for climate and marine data. Its goal is to centralize and optimize the extraction, transformation, and loading (ETL) of data from various APIs, including those providing climate information, primary productivity, and species sightings. WeatherPipes facilitates the orchestration of these pipelines, running them on a scheduled or real-time basis, ensuring that data in the project’s PostgreSQL database is consistently updated and accurate.
+WeatherPipes is a data processing module designed as part of The Weather Project to manage and automate pipelines for climate and marine data. Its goal is to centralize and optimize the extraction, transformation, and loading of data from various APIs, including those providing climate information, primary productivity, and species sightings. WeatherPipes facilitates the orchestration of these pipelines, running them on a scheduled or real-time basis, ensuring that data in the project’s PostgreSQL database is consistently updated and accurate.
 
 ## Initial Configutation
 
@@ -25,3 +25,19 @@ The following pipelines should be executed in the specified order to ensure prop
 1. **`src/pipelines/meteostat_stations_pipeline.py`**: Fetches stations from meteostat API and stores them into raw_meteostat.stations table. It's a full-refresh process.
 
 2. **`src/pipelines/meteostat_hourly_weather_measurements_pipeline.py`**: Fetches hourly weather measurements from the Meteostat API, processes the data, and inserts it into the raw_meteostat.meteostat_hourly_weather_measurements table. This pipeline uses a control table to determine the last ingested timestamp for each station, allowing for incremental data loading.
+
+## Current Version
+
+The current version of WeatherPipes is **v1.0.0**. 
+
+## Roadmap
+
+The following features are planned for future releases:
+
+1. **Orchestration and Scheduling**:
+   - Integration with Apache Airflow for automated pipeline scheduling.
+   - Implementation of notification systems for pipeline failures or delays.
+
+2. **Extended Data Sources**:
+   - Integration with additional climate and marine data APIs.
+   - Fetching real-time species sightings data from marine biology databases.
