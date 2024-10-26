@@ -1,4 +1,4 @@
-# Weatherpipes
+# WeatherPipes
 
 WeatherPipes is a data processing module designed as part of The Weather Project to manage and automate pipelines for climate and marine data. Its goal is to centralize and optimize the extraction, transformation, and loading of data from various APIs, including those providing climate information, primary productivity, and species sightings. WeatherPipes facilitates the orchestration of these pipelines, running them on a scheduled or real-time basis, ensuring that data in the project’s PostgreSQL database is consistently updated and accurate.
 
@@ -28,7 +28,7 @@ The following pipelines should be executed in the specified order to ensure prop
 
 ## Current Version
 
-The current version of WeatherPipes is **v1.0.0**. 
+The current stable version of WeatherPipes is **v1.0.0**. 
 
 ## Roadmap
 
