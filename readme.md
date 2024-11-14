@@ -30,7 +30,7 @@ The following pipelines should be executed in the specified order to ensure prop
 
 ## Current Version
 
-The current stable version of WeatherPipes is **v1.0.0**. 
+The current stable version of WeatherPipes is tag **v1.0.1**.
 
 ## Roadmap
 
