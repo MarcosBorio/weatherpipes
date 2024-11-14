@@ -2,23 +2,25 @@
 
 WeatherPipes is a data processing module designed as part of The Weather Project to manage and automate pipelines for climate and marine data. Its goal is to centralize and optimize the extraction, transformation, and loading of data from various APIs, including those providing climate information, primary productivity, and species sightings. WeatherPipes facilitates the orchestration of these pipelines, running them on a scheduled or real-time basis, ensuring that data in the project’s PostgreSQL database is consistently updated and accurate.
 
-## Initial Configutation
+## Prerequisites
 
-1. **`src/database/init_db.py`**: Runs initial setup for the PostgreSQL "abyys" database, creating the necessary schemas and tables for storing data.
+Before proceeding with the setup, ensure the following requirements are met:
 
-2. **`Create /.env file`**: Create .env file to store environment variables as following:
+### Docker and Docker Compose
 
-```
-DB_CONNECTION_STRING = postgresql+psycopg2://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:<DB_PORT>/abyss
-DB_USER = <user name>
-DB_PASSWORD = <user password>
-DB_HOST = <database host>
-DB_PORT = <database port>
-DB_NAME = "abyss"
-SERVER_DB_NAME = <default database of the server e.g "postgres">
-```
+1. **Install Docker**:  
+   Go to the official Docker website and download the Docker Desktop for your operating system. 
+   Follow the installation instructions provided on the Docker website. Start docker service.
 
-## Order of Execution
+## Initial Configuration
+
+1. **`Create /.env file`**: Create and set /.env file based on /.env.example file
+
+2. **`src/database/init_db.py`**: Runs initial setup for the PostgreSQL "abyys" database, creating the necessary schemas and tables for storing data. Note: Create "abyys" database users and privileges after inicialization.
+
+3. **`airflow/init_af.py`**: Initializes Airflow envirnoment by setting up initial configurations and creating a persistent metadata database in postgres. The function also starts airflow scheduler and webserver (8080) services. Note: Create airflow database users and privileges after inicialization (airflow database = ${DB_NAME_AF} env variable)
+
+## Order of pipelines execution
 
 The following pipelines should be executed in the specified order to ensure proper orchestration:
 
@@ -35,7 +37,6 @@ The current stable version of WeatherPipes is **v1.0.0**.
 The following features are planned for future releases:
 
 1. **Orchestration and Scheduling**:
-   - Integration with Apache Airflow for automated pipeline scheduling.
    - Implementation of notification systems for pipeline failures or delays.
 
 2. **Extended Data Sources**:

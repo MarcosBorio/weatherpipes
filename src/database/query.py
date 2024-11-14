@@ -21,7 +21,7 @@ def execute_query(query, engine, is_select=True):
             with engine.connect() as connection:
                 with connection.begin():
                     result = connection.execute(text(query))
-                    connection.commit()
+                    
         #print(f"Query executed: {query}")
         return result
 

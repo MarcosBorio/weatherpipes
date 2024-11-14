@@ -1,6 +1,16 @@
+#Virtual environment folder
 venv/
+#Python cache
 __pycache__/
 *.pyc
 *.pyo
+#environment variables configuration files
 .env
+#Testing folder
 tests/
+#Airflow logs and environment files
+twp_airflow/logs
+twp_airflow/airflow.cfg
+twp_airflow/airflow.db
+twp_airflow/webserver_config.py
+twp_airflow/airflow-webserver.pid

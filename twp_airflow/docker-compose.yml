@@ -1,0 +1,67 @@
+services:
+  airflow-init:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${DB_USER_AF}:${DB_PASSWORD_AF}@${DB_HOST_AF}:${DB_PORT_AF}/${DB_NAME_AF}
+      AIRFLOW_HOME: /opt/airflow
+      PYTHONPATH: /opt/airflow/project
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - .:/opt/airflow
+      - ..:/opt/airflow/project
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        airflow db init && airflow db migrate
+
+  scheduler:
+    image: apache/airflow:2.10.3
+    container_name: airflow_scheduler
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${DB_USER_AF}:${DB_PASSWORD_AF}@${DB_HOST_AF}:${DB_PORT_AF}/${DB_NAME_AF}
+      AIRFLOW__CORE__FERNET_KEY: ${FERNET_KEY}
+      AIRFLOW_HOME: /opt/airflow
+      PYTHONPATH: /opt/airflow/project
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - .:/opt/airflow
+      - ..:/opt/airflow/project
+    depends_on:
+      - airflow-init
+    command: ["scheduler"]
+    
+  webserver:
+    image: apache/airflow:2.10.3
+    container_name: airflow_webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${DB_USER_AF}:${DB_PASSWORD_AF}@${DB_HOST_AF}:${DB_PORT_AF}/${DB_NAME_AF}
+      AIRFLOW__CORE__FERNET_KEY: ${FERNET_KEY}
+      AIRFLOW_HOME: /opt/airflow
+      PYTHONPATH: /opt/airflow/project
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+      - .:/opt/airflow
+      - ..:/opt/airflow/project
+    ports:
+      - "8080:8080"
+    depends_on:
+      - scheduler
+      - airflow-init
+    command: ["webserver"]
+
+volumes:
+  airflow_logs:
+  airflow_dags:
+  airflow_plugins:

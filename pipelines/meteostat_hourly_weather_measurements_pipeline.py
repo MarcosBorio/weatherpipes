@@ -30,7 +30,7 @@ def meteostat_hourly_weather_measurements_pipeline():
         engine = create_engine_connection(conn_str)
 
         # Step 2 - Fetch station IDs
-        query = '''SELECT stationid FROM raw_meteostat.stations''' 
+        query = 'SELECT stationid FROM raw_meteostat.stations'
         stations = execute_query(query, engine)
         
         # Step 3 - Process each station
