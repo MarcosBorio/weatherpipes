@@ -1,4 +1,8 @@
-def insert_dataframe(dataframe, target_schema, target_table, engine=None, chunk_size=None, if_exists='append'):
+from src.database.query import execute_query
+import pandas as pd
+from sqlalchemy import text
+
+def insert_dataframe(dataframe, target_schema, target_table, engine=None, chunk_size=None, if_exists='append', method = None):
     """
     Inserts a pandas DataFrame into a specified database table. The data can be inserted in chunks if chunk_size is specified.
 
@@ -24,7 +28,7 @@ def insert_dataframe(dataframe, target_schema, target_table, engine=None, chunk_
 
             for i in range(0, total_rows, chunk_size):
                 chunk = dataframe.iloc[i:i + chunk_size]
-                print(f"Inserting rows {i} to {i + len(chunk) - 1} into {target_schema}.{target_table}")
+                print(f"Inserting rows {i+1} to {i + len(chunk)} into {target_schema}.{target_table}")
                 chunk.to_sql(target_table, con=engine, schema=target_schema, if_exists=if_exists, index=False)
 
     except Exception as e:

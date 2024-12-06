@@ -42,6 +42,16 @@ def meteostat_hourly_weather_measurements_pipeline():
                        VALUES ('{}') ON CONFLICT (stationid) DO NOTHING;'''.format(stationid)
             execute_query(query, engine, is_select=False)
 
+            #  Update the control table with the latest timestamp
+            query = '''UPDATE raw_meteostat.stations_ingestion_control
+                       SET hourly_max_timestamp = COALESCE(
+                           (SELECT MAX(m.time)::timestamp 
+                            FROM raw_meteostat.hourly_weather_measurements m 
+                            WHERE m.stationid = stations_ingestion_control.stationid), 
+                           hourly_max_timestamp) 
+                       WHERE stationid = '{}' '''.format(stationid)
+            execute_query(query, engine, is_select=False)
+
             # Retrieve the latest timestamp and calculate the start time for new data fetch
             query = """SELECT hourly_max_timestamp::timestamp + INTERVAL '1 hour' 
                        AS hourly_max_timestamp FROM raw_meteostat.stations_ingestion_control 
@@ -53,21 +63,11 @@ def meteostat_hourly_weather_measurements_pipeline():
             raw_data = Hourly(stationid, start=start_datetime, end=end_datetime).fetch()
             raw_data['stationid'] = stationid
 
-            # Step 4 - Process and insert data
+            # Process and insert data
             processed_data = meteostat_hourly_weather_measurements_processor(raw_data)
             insert_dataframe(dataframe=processed_data, target_schema='raw_meteostat', 
                              target_table='hourly_weather_measurements', engine=engine, 
                              chunk_size=10000, if_exists='append')
-
-            # Step 5 - Update the control table with the latest timestamp
-            query = '''UPDATE raw_meteostat.stations_ingestion_control
-                       SET hourly_max_timestamp = COALESCE(
-                           (SELECT MAX(m.time)::timestamp 
-                            FROM raw_meteostat.hourly_weather_measurements m 
-                            WHERE m.stationid = stations_ingestion_control.stationid), 
-                           hourly_max_timestamp) 
-                       WHERE stationid = '{}' '''.format(stationid)
-            execute_query(query, engine, is_select=False)
             
     except Exception as e:
         print(f"Error in function meteostat_hourly_weather_measurements_pipeline: {e}")

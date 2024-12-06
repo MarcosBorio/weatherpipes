@@ -14,3 +14,5 @@ twp_airflow/airflow.cfg
 twp_airflow/airflow.db
 twp_airflow/webserver_config.py
 twp_airflow/airflow-webserver.pid
+#Notebooks folder
+notebooks

@@ -107,6 +107,62 @@ def create_meteostat_tables(conn):
     except psycopg2.Error as e:
         print(f"Error creating tables: {e}")
 
+
+def create_obis_tables(conn):
+    """
+    Creates the required raw tables in the PostgreSQL database for OBIS data ingestion.
+
+    Tables created:
+    - raw_meteostat.stations: Information of sightings arround stations.
+
+    :param conn: psycopg2 connection object to the database.
+    :raises: psycopg2.Error if there is an issue executing the SQL command.
+    """
+    try:
+        # SQL to create sightings table
+        sql_creat_obis_sightings_table = """
+        CREATE TABLE raw_obis.sightings (
+            sightingid VARCHAR(512) NOT NULL PRIMARY KEY,                
+            eventDate VARCHAR(512),                           
+            year INT,                                      
+            month INT,                                     
+            day INT,                                       
+            scientificName TEXT,                           
+            vernacularName VARCHAR(255),                   
+            species VARCHAR(255),                          
+            genus VARCHAR(255),                            
+            family VARCHAR(255),                           
+            phylum VARCHAR(255),                           
+            kingdom VARCHAR(255),                          
+            decimalLatitude DOUBLE PRECISION,              
+            decimalLongitude DOUBLE PRECISION,             
+            waterBody VARCHAR(255),                        
+            locality TEXT,                                 
+            country VARCHAR(100),                          
+            sst DOUBLE PRECISION,                          
+            sss DOUBLE PRECISION,                          
+            bathymetry DOUBLE PRECISION,                   
+            shoreDistance DOUBLE PRECISION,                
+            depth DOUBLE PRECISION,                        
+            basisOfRecord TEXT,                            
+            coordinateUncertaintyInMeters DOUBLE PRECISION,
+            occurrenceStatus VARCHAR(50),                                               
+            datasetName TEXT,                              
+            scientificNameID VARCHAR(255),
+            source VARCHAR(256),
+            stationid VARCHAR(256) NOT NULL                
+        );
+        """
+        
+        # Execute SQL statements to create the tables
+        cursor = conn.cursor()
+        cursor.execute(sql_creat_obis_sightings_table)
+        print("Table 'sightings' created successfully.")
+        conn.commit()
+
+    except psycopg2.Error as e:
+        print(f"Error creating tables: {e}")            
+
 def init_db():
     """
     Initializes the database by creating the necessary database, schema, and tables for Meteostat data ingestion.
@@ -140,9 +196,11 @@ def init_db():
     # Step 3: Connect to the newly created database
     conn = create_server_connection(db_name, db_user, db_password, db_host, db_port)
 
-    # Step 4: Create schema and required tables
+    # Step 4: Create schemas and required tables
     if conn is not None:
         create_schema(conn, 'raw_meteostat')
         create_meteostat_tables(conn)
+        create_schema(conn, 'raw_obis')
+        create_obis_tables(conn)
         server_conn.close()
         conn.close()  # Close the connection to the database
