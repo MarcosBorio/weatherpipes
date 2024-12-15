@@ -58,7 +58,9 @@ def obis_sightings_pipeline():
             sightingids_to_delete = processed_data['sightingid'].tolist()
 
             with engine.connect() as conn:
-                conn.execute(table.delete().where(table.c.sightingid.in_(sightingids_to_delete)))
+                with conn.begin():
+                    conn.execution_options(isolation_level="AUTOCOMMIT").execute(table.delete().where(table.c.sightingid.in_(sightingids_to_delete)))
+                
 
             #Step 6 - Insert new data to target table
             insert_dataframe(dataframe=processed_data, target_schema='raw_obis',

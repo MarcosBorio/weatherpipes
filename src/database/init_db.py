@@ -124,9 +124,9 @@ def create_obis_tables(conn):
         CREATE TABLE raw_obis.sightings (
             sightingid VARCHAR(512) NOT NULL PRIMARY KEY,                
             eventDate VARCHAR(512),                           
-            year INT,                                      
-            month INT,                                     
-            day INT,                                       
+            year VARCHAR(255),                                      
+            month VARCHAR(255),                                     
+            day VARCHAR(255),                                       
             scientificName TEXT,                           
             vernacularName VARCHAR(255),                   
             species VARCHAR(255),                          
