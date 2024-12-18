@@ -3,14 +3,14 @@ import sys
 import requests
 
 # Retrieve environment variables provided by the workflow
-repo_name = str.split(os.getenv("REPO_NAME"), '/')[1]
-print(repo_name)
+complete_repo_name = os.getenv("REPO_NAME")
+repo_name = str.split(complete_repo_name, '/')[1]
 issue_number = os.getenv("ISSUE_NUMBER")
 original_title = os.getenv("ORIGINAL_TITLE")
 github_token = os.getenv("GITHUB_TOKEN")
 
 # Validate that all required variables are defined
-if not all([repo_name, issue_number, original_title, github_token]):
+if not all([complete_repo_name, repo_name, issue_number, original_title, github_token]):
     print("❌ Missing required environment variables.")
     sys.exit(1)
 
@@ -19,7 +19,7 @@ new_title = f"{repo_name}-{issue_number}: {original_title}"
 print(f"🔧 Renaming issue to: {new_title}")
 
 # GitHub API URL to update the issue
-api_url = f"https://api.github.com/repos/{repo_name}/issues/{issue_number}"
+api_url = f"https://api.github.com/repos/{complete_repo_name}/issues/{issue_number}"
 
 # Make a PATCH request to the GitHub API to update the issue title
 response = requests.patch(
