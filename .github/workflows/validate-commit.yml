@@ -26,4 +26,4 @@ jobs:
         env:
           COMMIT_MESSAGES: ${{ toJson(github.event.commits.*.message) }}
           REPO_NAME: ${{ github.repository }}
-        run: python .github/scripts/rename_issue.py
+        run: python .github/scripts/validate_commit.py
