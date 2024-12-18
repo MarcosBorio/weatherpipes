@@ -3,11 +3,11 @@ import sys
 import requests
 
 # Retrieve environment variables provided by the workflow
-repo_name = os.getenv("REPO_NAME")
+repo_name = str.split(os.getenv("REPO_NAME"), '/')[1]
+print(repo_name)
 issue_number = os.getenv("ISSUE_NUMBER")
 original_title = os.getenv("ORIGINAL_TITLE")
 github_token = os.getenv("GITHUB_TOKEN")
-project_name = os.getenv("PROJECT_NAME", "WeatherProject")
 
 # Validate that all required variables are defined
 if not all([repo_name, issue_number, original_title, github_token]):
