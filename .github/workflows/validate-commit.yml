@@ -1,3 +1,11 @@
+name: Validate Commit Messages
+
+on:
+  push: 
+    branches:
+      - main
+      - develop
+
 jobs:
   validate-commit:
     runs-on: ubuntu-latest
