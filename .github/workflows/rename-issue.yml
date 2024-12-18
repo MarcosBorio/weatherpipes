@@ -27,5 +27,4 @@ jobs:
         ISSUE_NUMBER: ${{ github.event.issue.number }}
         ORIGINAL_TITLE: ${{ github.event.issue.title }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PROJECT_NAME: "WeatherProject"  # Set your project name
       run: python .github/scripts/rename_issue.py
