@@ -54,6 +54,7 @@ def main():
     """
     # Configuration
     GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # GitHub token from environment variable
+    REPO_OWNER = "MarcosBorio"
     REPO_NAME = "weatherpipes"  # Replace with your repository name
 
     if not GITHUB_TOKEN:
@@ -67,7 +68,7 @@ def main():
         sys.exit(0)
 
     # Get in-progress issues
-    in_progress_prefixes = get_in_progress_issues(GITHUB_TOKEN, REPO_PREFIX, REPO_NAME)
+    in_progress_prefixes = get_in_progress_issues(GITHUB_TOKEN, REPO_OWNER, REPO_NAME)
     if not in_progress_prefixes:
         print("\u274c No issues found with the 'in progress' label.")
         sys.exit(1)
