@@ -11,23 +11,94 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",  # Timestamp format
 )
 
-def get_in_progress_issues(github_token, repo_owner, repo_name):
+def get_in_progress_issues_via_project(token, repo_owner, repo_name, project_number, column_name="In Progress"):
     """
-    Retrieves all issues in the 'in progress' state using the GitHub API.
+    Retrieves all issues from a GitHub project that are in the specified column (e.g., "In Progress").
+
+    Parameters:
+        token (str): GitHub personal access token for authentication.
+        repo_owner (str): Owner of the repository.
+        repo_name (str): Name of the repository.
+        project_number (int): The project number within the repository.
+        column_name (str): The name of the column to filter issues (default is "In Progress").
+
+    Returns:
+        list: A list of dictionaries containing issue numbers and titles.
     """
-    api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/issues"
-    headers = {"Authorization": f"Bearer {github_token}"}
-    params = {"state": "open", "labels": "in progress"}
+    try:
+        # GitHub GraphQL API URL
+        url = "https://api.github.com/graphql"
 
-    response = requests.get(api_url, headers=headers, params=params)
-    if response.status_code != 200:
-        logging.info(f"INFO: Failed to fetch issues from GitHub. HTTP Status: {response.status_code}")
-        sys.exit(1)
+        # Set up the headers for authentication
+        headers = {"Authorization": f"Bearer {token}"}
 
-    issues = response.json()
-    in_progress_prefixes = [f"{repo_name}-{issue['number']}" for issue in issues]
-    return in_progress_prefixes
+        # Define the GraphQL query
+        query = """
+        query($owner: String!, $repo: String!, $projectNumber: Int!) {
+          repository(owner: $owner, name: $repo) {
+            projectV2(number: $projectNumber) {
+              items(first: 100) {
+                nodes {
+                  content {
+                    ... on Issue {
+                      number
+                      title
+                    }
+                  }
+                  fieldValues(first: 10) {
+                    nodes {
+                      ... on ProjectV2ItemFieldValueSingleSelect {
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        """
 
+        # Define the variables for the GraphQL query
+        variables = {
+            "owner": repo_owner,
+            "repo": repo_name,
+            "projectNumber": project_number,
+        }
+
+        logging.info("Sending request to GitHub GraphQL API to fetch project issues...")
+
+        # Make the POST request to the GitHub API
+        response = requests.post(url, json={"query": query, "variables": variables}, headers=headers)
+
+        # Handle errors in the API response
+        if response.status_code != 200:
+            logging.error(f"Error: Received status code {response.status_code}")
+            logging.error(response.json())
+            return []
+
+        data = response.json()
+
+        # Extract and filter issues based on the specified column name
+        issues = []
+        for item in data.get("data", {}).get("repository", {}).get("projectV2", {}).get("items", {}).get("nodes", []):
+            field_values = item.get("fieldValues", {}).get("nodes", [])
+            for field in field_values:
+                if field.get("name") == column_name:
+                    issues.append({
+                        "number": item["content"]["number"],
+                        "title": item["content"]["title"]
+                    })
+
+        logging.info(f"Found {len(issues)} issues in column '{column_name}'")
+        return issues
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"RequestException occurred: {e}")
+        return []
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
+        return []
 
 def get_commit_messages():
     """
@@ -40,52 +111,72 @@ def get_commit_messages():
         ).strip()
         return result.split("\n") if result else []
     except subprocess.CalledProcessError as e:
-        logging.info(f"ERROR: Error getting commit messages: {e}")
+        logging.error(f"Error getting commit messages: {e}")
         sys.exit(1)
-
-import sys
+    except Exception as e:
+        logging.error(f"An unexpected error occurred while retrieving commit messages: {e}")
+        sys.exit(1)
 
 def validate_commit_messages(commit_messages, in_progress_prefixes):
     """
     Validates that each commit message starts with a prefix from the in-progress issues.
-    """
-    for message in commit_messages:
-        if not any(message.startswith(prefix) for prefix in in_progress_prefixes):
-            logging.info(f"INFO: Commit message '{message}' does not match any in-progress issue prefixes.")
-            sys.exit(1)
-    logging.info("SUCCESS: All commit messages match in-progress issue prefixes.")        
 
+    Parameters:
+        commit_messages (list): A list of commit messages to validate.
+        in_progress_prefixes (list): A list of prefixes corresponding to issues in "In Progress" status.
+
+    Raises:
+        SystemExit: If any commit message does not match the required prefix.
+
+    Logs:
+        Logs an error for any commit message that does not match.
+        Logs a success message if all commit messages pass validation.
+    """
+    try:
+        for message in commit_messages:
+            if not any(message.startswith(prefix) for prefix in in_progress_prefixes):
+                logging.error(f"Commit message '{message}' does not match any in-progress issue prefixes.")
+                sys.exit(1)
+        logging.info("All commit messages match in-progress issue prefixes.")
+    except Exception as e:
+        logging.error(f"An unexpected error occurred during commit message validation: {e}")
+        sys.exit(1)
 
 def main():
     """
     Main function to validate commit messages against in-progress issues.
     """
-    # Configuration
-    from dotenv import load_dotenv
-    load_dotenv()
-    
-    GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # GitHub token from environment variable
-    REPO_OWNER = "MarcosBorio"
-    REPO_NAME = "weatherpipes"  # Replace with your repository name
+    try:
+        # Configuration
+        from dotenv import load_dotenv
+        load_dotenv()
 
-    if not GITHUB_TOKEN:
-        logging.info("INFO: Missing GITHUB_TOKEN environment variable.")
+        GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # GitHub token from environment variable
+        REPO_OWNER = "MarcosBorio"
+        REPO_NAME = "weatherpipes"  # Replace with your repository name
+        PROJECT_NUMBER = 1
+
+        if not GITHUB_TOKEN:
+            logging.error("Missing GITHUB_TOKEN environment variable.")
+            sys.exit(1)
+
+        # Get commit messages
+        commit_messages = get_commit_messages()
+        if not commit_messages:
+            logging.info("No commits to validate.")
+            sys.exit(0)
+
+        # Get in-progress issues
+        in_progress_prefixes = get_in_progress_issues_via_project(GITHUB_TOKEN, REPO_OWNER, REPO_NAME, PROJECT_NUMBER)
+        if not in_progress_prefixes:
+            logging.error("No issues found with the 'in progress' label.")
+            sys.exit(1)
+
+        # Validate commit messages
+        validate_commit_messages(commit_messages, in_progress_prefixes)
+    except Exception as e:
+        logging.error(f"An unexpected error occurred in the main function: {e}")
         sys.exit(1)
-
-    # Get commit messages
-    commit_messages = get_commit_messages()
-    if not commit_messages:
-        logging.info("INFO: No commits to validate.")
-        sys.exit(0)
-
-    # Get in-progress issues
-    in_progress_prefixes = get_in_progress_issues(GITHUB_TOKEN, REPO_OWNER, REPO_NAME)
-    if not in_progress_prefixes:
-        logging.info("INFO: No issues found with the 'in progress' label.")
-        sys.exit(1)
-
-    # Validate commit messages
-    validate_commit_messages(commit_messages, in_progress_prefixes)
 
 if __name__ == "__main__":
     main()
