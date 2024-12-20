@@ -16,3 +16,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO_NAME: ${{ github.repository }}
         run: python .github/scripts/validate_commit.py
+
+      - name: Revert invalid commits
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🚨 Reverting the latest commit due to invalid messages."
+          git reset --hard HEAD~1
+          git push origin ${{ github.ref_name }} --force
