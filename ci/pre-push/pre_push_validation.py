@@ -2,6 +2,14 @@ import os
 import sys
 import requests
 import subprocess
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,  # Log level
+    format="%(asctime)s - %(levelname)s - %(message)s",  # Log format
+    datefmt="%Y-%m-%d %H:%M:%S",  # Timestamp format
+)
 
 def get_in_progress_issues(github_token, repo_owner, repo_name):
     """
@@ -13,7 +21,7 @@ def get_in_progress_issues(github_token, repo_owner, repo_name):
 
     response = requests.get(api_url, headers=headers, params=params)
     if response.status_code != 200:
-        print(f"\u274c Failed to fetch issues from GitHub. HTTP Status: {response.status_code}")
+        logging.info(f"INFO: Failed to fetch issues from GitHub. HTTP Status: {response.status_code}")
         sys.exit(1)
 
     issues = response.json()
@@ -32,7 +40,7 @@ def get_commit_messages():
         ).strip()
         return result.split("\n") if result else []
     except subprocess.CalledProcessError as e:
-        print(f"\u274c Error getting commit messages: {e}")
+        logging.info(f"ERROR: Error getting commit messages: {e}")
         sys.exit(1)
 
 import sys
@@ -43,9 +51,9 @@ def validate_commit_messages(commit_messages, in_progress_prefixes):
     """
     for message in commit_messages:
         if not any(message.startswith(prefix) for prefix in in_progress_prefixes):
-            print(f"INFO: Commit message '{message}' does not match any in-progress issue prefixes.")
+            logging.info(f"INFO: Commit message '{message}' does not match any in-progress issue prefixes.")
             sys.exit(1)
-    print("SUCCESS: All commit messages match in-progress issue prefixes.")        
+    logging.info("SUCCESS: All commit messages match in-progress issue prefixes.")        
 
 
 def main():
@@ -58,19 +66,19 @@ def main():
     REPO_NAME = "weatherpipes"  # Replace with your repository name
 
     if not GITHUB_TOKEN:
-        print("INFO: Missing GITHUB_TOKEN environment variable.")
+        logging.info("INFO: Missing GITHUB_TOKEN environment variable.")
         sys.exit(1)
 
     # Get commit messages
     commit_messages = get_commit_messages()
     if not commit_messages:
-        print("INFO: No commits to validate.")
+        logging.info("INFO: No commits to validate.")
         sys.exit(0)
 
     # Get in-progress issues
     in_progress_prefixes = get_in_progress_issues(GITHUB_TOKEN, REPO_OWNER, REPO_NAME)
     if not in_progress_prefixes:
-        print("INFO: No issues found with the 'in progress' label.")
+        logging.info("INFO: No issues found with the 'in progress' label.")
         sys.exit(1)
 
     # Validate commit messages
