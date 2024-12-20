@@ -61,6 +61,9 @@ def main():
     Main function to validate commit messages against in-progress issues.
     """
     # Configuration
+    from dotenv import load_dotenv
+    load_dotenv()
+    
     GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")  # GitHub token from environment variable
     REPO_OWNER = "MarcosBorio"
     REPO_NAME = "weatherpipes"  # Replace with your repository name
