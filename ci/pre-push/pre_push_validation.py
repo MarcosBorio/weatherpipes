@@ -43,9 +43,9 @@ def validate_commit_messages(commit_messages, in_progress_prefixes):
     """
     for message in commit_messages:
         if not any(message.startswith(prefix) for prefix in in_progress_prefixes):
-            print(f"\u274c Commit message '{message}' does not match any in-progress issue prefixes.")
+            print(f"INFO: Commit message '{message}' does not match any in-progress issue prefixes.")
             sys.exit(1)
-    print("\u2705 All commit messages match in-progress issue prefixes.")        
+    print("SUCCESS: All commit messages match in-progress issue prefixes.")        
 
 
 def main():
@@ -58,19 +58,19 @@ def main():
     REPO_NAME = "weatherpipes"  # Replace with your repository name
 
     if not GITHUB_TOKEN:
-        print("\u274c Missing GITHUB_TOKEN environment variable.")
+        print("INFO: Missing GITHUB_TOKEN environment variable.")
         sys.exit(1)
 
     # Get commit messages
     commit_messages = get_commit_messages()
     if not commit_messages:
-        print("\u2705 No commits to validate.")
+        print("INFO: No commits to validate.")
         sys.exit(0)
 
     # Get in-progress issues
     in_progress_prefixes = get_in_progress_issues(GITHUB_TOKEN, REPO_OWNER, REPO_NAME)
     if not in_progress_prefixes:
-        print("\u274c No issues found with the 'in progress' label.")
+        print("INFO: No issues found with the 'in progress' label.")
         sys.exit(1)
 
     # Validate commit messages
