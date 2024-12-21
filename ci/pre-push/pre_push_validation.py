@@ -100,7 +100,7 @@ def get_in_progress_issues_via_project(token, repo_owner, repo_name, project_num
                     prefix = f"{repo_name}-{content.get('number')}"
                     prefixes.append(prefix)
 
-        logging.info(f"Found {len(prefixes)} prefixes in column '{column_name}'")
+        logging.info(f"Found {len(prefixes)} issues in column '{column_name}'")
         return prefixes
 
     except requests.exceptions.RequestException as e:
