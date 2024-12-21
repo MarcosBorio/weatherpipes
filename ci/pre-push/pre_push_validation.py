@@ -11,19 +11,19 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",  # Timestamp format
 )
 
-def get_in_progress_issues_via_project(token, repo_owner, repo_name, project_number, column_name="In Progress"):
+def get_in_progress_issues_via_project(token, repo_owner, repo_name, project_number, column_name="In progress"):
     """
-    Retrieves all issues from a GitHub project that are in the specified column (e.g., "In Progress").
+    Retrieves all issues from a GitHub project that are in the specified column (e.g., "In progress").
 
     Parameters:
         token (str): GitHub personal access token for authentication.
         repo_owner (str): Owner of the repository.
         repo_name (str): Name of the repository.
         project_number (int): The project number within the repository.
-        column_name (str): The name of the column to filter issues (default is "In Progress").
+        column_name (str): The name of the column to filter issues (default is "In progress").
 
     Returns:
-        list: A list of dictionaries containing issue numbers and titles.
+        list: A list of prefixes corresponding to issues in the specified column.
     """
     try:
         # GitHub GraphQL API URL
@@ -47,7 +47,11 @@ def get_in_progress_issues_via_project(token, repo_owner, repo_name, project_num
                   }
                   fieldValues(first: 10) {
                     nodes {
-                      ... on ProjectV2ItemFieldValueSingleSelect {
+                      __typename
+                      ... on ProjectV2ItemFieldTextValue {
+                        text
+                      }
+                      ... on ProjectV2ItemFieldSingleSelectValue {
                         name
                       }
                     }
@@ -80,18 +84,24 @@ def get_in_progress_issues_via_project(token, repo_owner, repo_name, project_num
         data = response.json()
 
         # Extract and filter issues based on the specified column name
-        issues = []
+        prefixes = []
         for item in data.get("data", {}).get("repository", {}).get("projectV2", {}).get("items", {}).get("nodes", []):
             field_values = item.get("fieldValues", {}).get("nodes", [])
-            for field in field_values:
-                if field.get("name") == column_name:
-                    issues.append({
-                        "number": item["content"]["number"],
-                        "title": item["content"]["title"]
-                    })
 
-        logging.info(f"Found {len(issues)} issues in column '{column_name}'")
-        return issues
+            # Find the column name in field values
+            column_name_value = next(
+                (field.get("name") for field in field_values if field.get("__typename") == "ProjectV2ItemFieldSingleSelectValue" and field.get("name") == column_name),
+                None
+            )
+
+            if column_name_value:
+                content = item.get("content", {})
+                if content:
+                    prefix = f"{repo_name}-{content.get('number')}"
+                    prefixes.append(prefix)
+
+        logging.info(f"Found {len(prefixes)} prefixes in column '{column_name}'")
+        return prefixes
 
     except requests.exceptions.RequestException as e:
         logging.error(f"RequestException occurred: {e}")
